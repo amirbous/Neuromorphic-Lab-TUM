@@ -1,4 +1,4 @@
-    from argparse import ArgumentParser
+from argparse import ArgumentParser
 from neurofem import generate_poisson_unitdisk_variable_f, float_to_signed_sparse, NeurofemSimulation, NeurofemConfig, SpinnakerConfig
 from neurofem.calc import calc_mse, calc_rmse, calc_relative_residual
 
@@ -17,7 +17,7 @@ def main():
 
     matrix, rhs, _ = generate_poisson_unitdisk_variable_f()
     spinn_config = SpinnakerConfig(s2_ip="192.168.0.6")
-    neurofem_config = NeurofemConfig(matrix=matrix, gamma=gamma, dt=dt)
+    neurofem_config = NeurofemConfig(gamma=gamma, dt=dt)
     simulation = NeurofemSimulation(spinn_config, neurofem_config, matrix, rhs)
 
     solution = simulation.run(timesteps=timesteps, sys_tick_in_s=sys_tick_in_s)
