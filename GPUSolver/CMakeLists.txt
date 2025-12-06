@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(C_CASOPT VERSION 1.0.0 LANGUAGES CXX)
+project(APU_FEM VERSION 1.0.0 LANGUAGES CXX)
 
 # --- 1. Default to Debug mode if not specified
 # This ensures -g flags (debug symbols) are passed to the compiler
@@ -11,11 +11,12 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED OFF)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-set(TARGET_EXE "c_casopt")
+set(TARGET_EXE "poissfem")
 
 set(SOURCES
     src/main.cpp
     src/IO.cpp
+    src/ComputeModel.cpp
 )
 
 add_executable(${TARGET_EXE} ${SOURCES})

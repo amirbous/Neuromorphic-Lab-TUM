@@ -61,36 +61,36 @@ struct Vertex {
 };
 
 
-struct Face {
+struct Element {
     
-    Face()
-        : v1(0), v2(0), v3(0)
+    Element()
+        : v1(0), v2(0), v3(0), v4(0)
           {}
 
 
-    Face(int v1, int v2, int v3)
-        : v1(v1), v2(v2), v3(v3) 
+    Element(int v1, int v2, int v3, int v4)
+        : v1(v1), v2(v2), v3(v3),v4(v4) 
           {}
 
-    Face(int v1, int v2, int v3, int f_id)
-        : v1(v1), v2(v2), v3(v3)
+    Element(int v1, int v2, int v3)
+        : v1(v1), v2(v2), v3(v3), v4(v4)
           {}
 
 
-    Face(const Face& other)
-        : v1(other.v1), v2(other.v2), v3(other.v3)
+    Element(const Element& other)
+        : v1(other.v1), v2(other.v2), v3(other.v3), v4(other.v4)
           {}
 
-    Face& operator=(const Face&) = default;
+    Element& operator=(const Element&) = default;
 
-
-    bool operator==(const Face& other) const {
-        return v1 == other.v1 && v2 == other.v2 && v3 == other.v3;
+    bool operator==(const Element& other) const {
+        return v1 == other.v1 && v2 == other.v2 && v3 == other.v3 && v4 == other.v4;
     }
 
     int v1;
     int v2;
     int v3;
+    int v4;
     
 };
 
