@@ -1,5 +1,5 @@
 #include "include/IO.hpp"
-#include "include/geometry.hpp"
+#include "include/model.hpp"
 
 #include <iostream>
 
@@ -23,15 +23,17 @@ void DisplayWelcomeHeader()
 }
 
 
-
-// TODO: adapt for tetrahedral elements
-void ReadVTK(std::string model_name, std::vector<Vertex> &vertices, std::vector<Element> &conn,
-             ProblemProperties &problem_properties)
+// TODO: adapt for tetrahedral elements - DONE
+void ReadVTK(std::string model_name, Model &model)
 {
 
         std::string vtk_filename = model_name + ".vtk";
         std::string vtk_file = "data/" + vtk_filename;
         std::ifstream vtk_file_stream(vtk_file);
+
+
+        std::vector<Vertex>& vertices = model.vertices;
+        std::vector<Element>& elements = model.elements;
 
         if (!vtk_file_stream.is_open())
         {
@@ -54,7 +56,7 @@ void ReadVTK(std::string model_name, std::vector<Vertex> &vertices, std::vector<
                         std::string type;
                         vtk_file_stream >> n_points >> type;
 
-                        problem_properties.n_vertices = n_points;
+                        model.n_vertices = n_points;
                         vertices.resize(n_points);
 
                         for (int i = 0; i < n_points; ++i)
@@ -70,8 +72,8 @@ void ReadVTK(std::string model_name, std::vector<Vertex> &vertices, std::vector<
                         int size_dummy;
                         vtk_file_stream >> n_cells_header >> size_dummy;
                         n_cells_header --;
-                        problem_properties.n_faces = n_cells_header;
-                        conn.reserve(n_cells_header);
+                        model.n_elements = n_cells_header;
+                        elements.reserve(n_cells_header);
                 }
 
 
@@ -116,11 +118,11 @@ void ReadVTK(std::string model_name, std::vector<Vertex> &vertices, std::vector<
                                         int v3 = static_cast<int>(connectivity_raw[start + 2]);
                                         int v4 = static_cast<int>(connectivity_raw[start + 3]);
 
-                                        conn.emplace_back(v1, v2, v3, v4);
+                                        elements.emplace_back(v1, v2, v3, v4);
                                 }
                                 else
                                 {
-                                        std::cerr << "Warning: Cell " << i << " has " << count << " vertices " << std::endl;
+                                        std::cerr << "Offset did not match a tetrahedra element: Cell " << i << " has " << count << " vertices " << std::endl;
                                         return;
                                 }
                         }
@@ -136,38 +138,22 @@ void ReadVTK(std::string model_name, std::vector<Vertex> &vertices, std::vector<
 }
 
 
-//todo: just in case obj files are used (not very likely)
-void ReadObj(std::string model_name, std::vector<Vertex> &vertices, std::vector<Element> &conn,
-             ProblemProperties &problem_properties)
-{
-
-        std::string obj_filename = model_name + ".obj";
-
-        std::ifstream obj_file_stream(obj_filename);
-        if (!obj_file_stream.is_open())
-        {
-                std::cerr << "Error: Could not open OBJ file " << obj_filename << std::endl;
-                return;
-        }
-
-        return;
-}
-
-
-void write_vtu(const std::string problem_name, const std::vector<Vertex> &vertices, const std::vector<Element> &conn,
-               ProblemProperties &problem_properties)
+// TODO: adapt for tetrahedral elements - DONE
+void write_vtu(const std::string problem_name,
+               Model &model)
 {
     std::ofstream fstream;
     std::string fname = problem_name + "_output.vtu";
 
-    // Renaming nfaces to nelements for clarity, though it comes from n_faces in struct
-    int nvertices = problem_properties.n_vertices;
-    int nelements = problem_properties.n_faces; 
+    std::vector<Vertex>& vertices = model.vertices;
+    std::vector<Element>& elements = model.elements;
+
+    int nvertices = model.n_vertices;
+    int nelements = model.n_elements; 
 
     fstream.open(fname);
     if (fstream.is_open())
     {
-        // --- Header ---
         fstream << "<?xml version=\"1.0\"?>" << std::endl;
         fstream << "<VTKFile type=\"UnstructuredGrid\" version=\"0.1\"";
         fstream << " byte_order=\"LittleEndian\" header_type=\"UInt64\">" << std::endl;
@@ -175,7 +161,7 @@ void write_vtu(const std::string problem_name, const std::vector<Vertex> &vertic
         fstream << "<Piece NumberOfPoints=\"" << nvertices << "\"  ";
         fstream << "NumberOfCells=\"" << nelements << "\">" << std::endl;
         
-        // --- Points (Vertices) ---
+
         fstream << "<Points>" << std::endl;
         fstream << "<DataArray type=\"Float32\" Name=\"Points\"";
         fstream << " NumberOfComponents=\"3\" Format=\"ascii\">" << std::endl;
@@ -191,26 +177,24 @@ void write_vtu(const std::string problem_name, const std::vector<Vertex> &vertic
         fstream << "</DataArray>" << std::endl;
         fstream << "</Points>" << std::endl;
 
-        // --- Cells (Connectivity, Offsets, Types) ---
+
         fstream << "<Cells>" << std::endl;
-        
-        // 1. Connectivity
+
         fstream << "<DataArray type=\"Int64\" ";
         fstream << "Name=\"connectivity\" format=\"ascii\">" << std::endl;
 
         for (size_t i = 0; i < nelements; i++)
         {
-            // Tetrahedra have 4 nodes
-            fstream << conn[i].v1
-                    << " " << conn[i].v2
-                    << " " << conn[i].v3
-                    << " " << conn[i].v4
+
+            fstream << elements[i].v1
+                    << " " << elements[i].v2
+                    << " " << elements[i].v3
+                    << " " << elements[i].v4
                     << std::endl;
         }
         fstream << "</DataArray>" << std::endl;
 
-        // 2. Offsets
-        // Must increment by 4 for tetrahedra (4 nodes per element)
+ 
         fstream << "<DataArray type=\"Int64\" Name=\"offsets\" format=\"ascii\">" << std::endl;
         
         long long current_offset = 0;
@@ -218,28 +202,25 @@ void write_vtu(const std::string problem_name, const std::vector<Vertex> &vertic
         {
             current_offset += 4; 
             fstream << current_offset << " ";
-            if ((i + 1) % 20 == 0) fstream << std::endl; // Newline for readability
+            if ((i + 1) % 20 == 0) fstream << std::endl;
         }
         fstream << std::endl;
         fstream << "</DataArray>" << std::endl;
 
-        // 3. Types
-        // VTK Type for Linear Tetrahedron is 10
         fstream << "<DataArray type=\"UInt8\" Name=\"types\" format=\"ascii\">" << std::endl;
 
         for (size_t i = 0; i < nelements; i++)
         {
-            fstream << "10" << " "; // Type 10 = VTK_TETRA
+            fstream << "10" << " ";
             if ((i + 1) % 20 == 0) fstream << std::endl;
         }
         fstream << std::endl;
         fstream << "</DataArray>" << std::endl;
         fstream << "</Cells>" << std::endl;
 
-        // --- Point Data (Potential, Density) ---
+
         fstream << "<PointData>" << std::endl;
-        
-        // Potential
+
         fstream << "<DataArray type=\"Float32\" Name=\"Potential\" ";
         fstream << "NumberOfComponents=\"1\" format=\"ascii\">" << std::endl;
         for (int i = 0; i < nvertices; i++)
@@ -248,7 +229,7 @@ void write_vtu(const std::string problem_name, const std::vector<Vertex> &vertic
         }
         fstream << "</DataArray>" << std::endl;
 
-        // Density
+
         fstream << "<DataArray type=\"Float32\" Name=\"density\" ";
         fstream << "NumberOfComponents=\"1\" format=\"ascii\">" << std::endl;
         for (int i = 0; i < nvertices; i++)
