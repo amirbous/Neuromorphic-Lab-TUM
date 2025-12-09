@@ -24,7 +24,8 @@ void DisplayWelcomeHeader()
 
 
 // TODO: adapt for tetrahedral elements - DONE
-void ReadVTK(std::string model_name, Model &model)
+template<typename T_index, typename T_value>
+void ReadVTK(std::string model_name, Model<T_index, T_value> &model)
 {
 
         std::string vtk_filename = model_name + ".vtk";
@@ -32,8 +33,8 @@ void ReadVTK(std::string model_name, Model &model)
         std::ifstream vtk_file_stream(vtk_file);
 
 
-        std::vector<Vertex>& vertices = model.vertices;
-        std::vector<Element>& elements = model.elements;
+        std::vector<Vertex<T_index, T_value>>& vertices = model.vertices;
+        std::vector<Element<T_index>>& elements = model.elements;
 
         if (!vtk_file_stream.is_open())
         {
@@ -43,33 +44,33 @@ void ReadVTK(std::string model_name, Model &model)
 
         std::string buffer;
 
-        std::vector<unsigned long int> offsets;
-        std::vector<unsigned long int> connectivity_raw;
-        unsigned long int n_cells_header = 0;
+        std::vector<T_index> offsets;
+        std::vector<T_index> connectivity_raw;
+        T_index n_cells_header = 0;
 
         while (vtk_file_stream >> buffer)
         {
 
                 if (buffer == "POINTS")
                 {
-                        int n_points;
+                        T_index n_points;
                         std::string type;
                         vtk_file_stream >> n_points >> type;
 
                         model.n_vertices = n_points;
                         vertices.resize(n_points);
 
-                        for (int i = 0; i < n_points; ++i)
+                        for (T_index i = 0; i < n_points; ++i)
                         {
-                                float x, y, z;
+                                T_value x, y, z;
                                 vtk_file_stream >> x >> y >> z;
-                                vertices[i] = Vertex(x, y, z, i);
+                                vertices[i] = Vertex<T_index, T_value>(x, y, z, i);
                         }
                 }
 
                 else if (buffer == "CELLS")
                 {
-                        int size_dummy;
+                        T_index size_dummy;
                         vtk_file_stream >> n_cells_header >> size_dummy;
                         n_cells_header --;
                         model.n_elements = n_cells_header;
@@ -83,7 +84,7 @@ void ReadVTK(std::string model_name, Model &model)
                         vtk_file_stream >> type;
                         offsets.resize(n_cells_header + 1);
 
-                        for (int i = 0; i <= n_cells_header; ++i)
+                        for (T_index i = 0; i <= n_cells_header; ++i)
                         {
                                 vtk_file_stream >> offsets[i];
                         }
@@ -98,25 +99,24 @@ void ReadVTK(std::string model_name, Model &model)
                         unsigned long int total_indices = offsets.back();
                         connectivity_raw.resize(total_indices);
                         std::cout << "Total connectivity indices to read: " << total_indices << std::endl;
-                        for (unsigned long int i = 0; i < total_indices; ++i)
+                        for (T_index i = 0; i < total_indices; ++i)
                         {
                                 vtk_file_stream >> connectivity_raw[i];
                         }
 
 
-                        for (int i = 0; i < n_cells_header; ++i)
+                        for (T_index i = 0; i < n_cells_header; ++i)
                         {
-                                unsigned long int start = offsets[i];
-                                unsigned long int end = offsets[i + 1];
-                                unsigned long int count = end - start;
-
+                                T_index start = offsets[i];
+                                T_index end = offsets[i + 1];
+                                T_index count = end - start;
                                 if (count == 4)
                                 {
 
-                                        int v1 = static_cast<int>(connectivity_raw[start]);
-                                        int v2 = static_cast<int>(connectivity_raw[start + 1]);
-                                        int v3 = static_cast<int>(connectivity_raw[start + 2]);
-                                        int v4 = static_cast<int>(connectivity_raw[start + 3]);
+                                        T_index v1 = static_cast<T_index>(connectivity_raw[start]);
+                                        T_index v2 = static_cast<T_index>(connectivity_raw[start + 1]);
+                                        T_index v3 = static_cast<T_index>(connectivity_raw[start + 2]);
+                                        T_index v4 = static_cast<T_index>(connectivity_raw[start + 3]);
 
                                         elements.emplace_back(v1, v2, v3, v4);
                                 }
@@ -139,14 +139,15 @@ void ReadVTK(std::string model_name, Model &model)
 
 
 // TODO: adapt for tetrahedral elements - DONE
+template<typename T_index, typename T_value>
 void write_vtu(const std::string problem_name,
-               Model &model)
+               Model<T_index, T_value> &model)
 {
     std::ofstream fstream;
     std::string fname = problem_name + "_output.vtu";
 
-    std::vector<Vertex>& vertices = model.vertices;
-    std::vector<Element>& elements = model.elements;
+    std::vector<Vertex<T_index, T_value>>& vertices = model.vertices;
+    std::vector<Element<T_index>>& elements = model.elements;
 
     int nvertices = model.n_vertices;
     int nelements = model.n_elements; 
@@ -252,3 +253,12 @@ void write_vtu(const std::string problem_name,
         std::cerr << "Error in opening result file" << std::endl;
     }
 }
+
+
+
+template void ReadVTK<int, float>(std::string model_name, Model<int, float> &model);
+template void write_vtu<int, float>(const std::string problem_name,
+                                   Model<int, float> &model);
+template void ReadVTK<int, double>(std::string model_name, Model<int, double> &model);
+template void write_vtu<int, double>(const std::string problem_name,
+                                    Model<int, double> &model);

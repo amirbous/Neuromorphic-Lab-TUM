@@ -4,20 +4,22 @@
 
 #include <vector>
 
+
+template<typename T_index, typename T_value>
 struct Vertex {
     Vertex (): x(0.0f), y(0.0f), z(0.0f), 
                potential(0.0f), density(0.0f), v_id(0) {}
 
-    Vertex (float x, float y, float z): 
+    Vertex (T_value x, T_value y, T_value z): 
            x(x), y(y), z(z), potential(0.0f), density(0.0f), v_id(0) {}
 
-    Vertex (float x, float y, float z, int v_id): 
+    Vertex (T_value x, T_value y, T_value z, T_index v_id): 
            x(x), y(y), z(z), potential(0.0f), density(0.0f), v_id(v_id) {}
 
-    Vertex (float x, float y, float z, float potential, int v_id): 
+    Vertex (T_value x, T_value y, T_value z, T_value potential, T_index v_id): 
            x(x), y(y), z(z), potential(potential), density(0.0f), v_id(v_id) {}
 
-    Vertex (float x, float y, float z, float potential, float density, int v_id): 
+    Vertex (T_value x, T_value y, T_value z, T_value potential, T_value density, T_index v_id): 
            x(x), y(y), z(z), potential(potential), density(density), v_id(v_id) {}
 
     Vertex(const Vertex& other): 
@@ -34,21 +36,54 @@ struct Vertex {
         return v_id == other.v_id;
     }    
 
-    float x, y, z;
-    float potential;
-    float density;
-    int v_id;
+    T_value x, y, z;
+    T_value potential;
+    T_value density;
+    T_index v_id;
 };
 
+
+// just needed for processing the geometry!
+template<typename T_index>
+struct Face {
+    Face()
+        : v1(0), v2(0), v3(0) {}
+    Face(T_index v1, T_index v2, T_index v3)
+        : v1(v1), v2(v2), v3(v3) {}
+    
+    Face(const Face& other)
+        : v1(other.v1), v2(other.v2), v3(other.v3) {}
+
+    Face& operator=(const Face&) = default;
+
+    bool operator==(const Face& other) const {
+        return v1 == other.v1 && v2 == other.v2 && v3 == other.v3;
+    }
+
+    void sort_faces() {
+        if (v1 > v2) std::swap(v1, v2);
+        if (v1 > v3) std::swap(v1, v3);
+        if (v2 > v3) std::swap(v2, v3);
+    }
+    bool operator<(const Face& other) const {
+        if (v1 != other.v1) return v1 < other.v1;
+        if (v2 != other.v2) return v2 < other.v2;
+        return v3 < other.v3;
+    }
+    T_index v1, v2, v3;
+
+};
+
+template<typename T_index>
 struct Element {
     
     Element()
         : v1(0), v2(0), v3(0), v4(0) {}
 
-    Element(int v1, int v2, int v3, int v4)
+    Element(T_index v1, T_index v2, T_index v3, T_index v4)
         : v1(v1), v2(v2), v3(v3), v4(v4) {}
 
-    Element(int v1, int v2, int v3)
+    Element(T_index v1, T_index v2, T_index v3)
         : v1(v1), v2(v2), v3(v3), v4(0) {}
 
     Element(const Element& other)
@@ -60,21 +95,24 @@ struct Element {
         return v1 == other.v1 && v2 == other.v2 && v3 == other.v3 && v4 == other.v4;
     }
 
-    int v1, v2, v3, v4; 
+    T_index v1, v2, v3, v4; 
 };
 
+
+
+template<typename T_index, typename T_value>
 struct Model {
 
 
     int n_vertices;
     int n_elements;
-    std::vector<Vertex> vertices;
-    std::vector<Element> elements;
+    std::vector<Vertex<T_index, T_value>> vertices;
+    std::vector<Element<T_index>> elements;
 
     Model() : n_vertices(0), n_elements(0) {}
 
 
-    Model(const std::vector<Vertex>& verts, const std::vector<Element>& elems)
+    Model(const std::vector<Vertex<T_index, T_value>>& verts, const std::vector<Element<T_index>>& elems)
     : n_vertices(static_cast<int>(verts.size())),
       n_elements(static_cast<int>(elems.size())),
       vertices(verts),

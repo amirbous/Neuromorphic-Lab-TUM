@@ -1,6 +1,9 @@
 #include <iostream>
 
 #include <string>
+#include <set>
+#include <map>
+#include <vector>
 
 #include "include/IO.hpp"
 #include "include/model.hpp"
@@ -14,8 +17,10 @@ int main(int argc, char* argv[])  {
 
     std::string model_name{};
 
-    Model poissfem_model;
+    Model<index_type, value_type> poissfem_model;
     CSR_matrix<index_type, value_type> A;
+
+    
     std::vector<value_type> b;
 
     DisplayWelcomeHeader();
@@ -27,7 +32,8 @@ int main(int argc, char* argv[])  {
     std::cout << "Model: " << model_name << std::endl;
     std::cout << "Number of vertices: " << poissfem_model.n_vertices << std::endl;
     std::cout << "Number of elements: " << poissfem_model.n_elements << std::endl;
-    assignBoundaryConditions(poissfem_model);
+
+
 
 
     initialize_CSR_indices<index_type, value_type>(poissfem_model, A);
