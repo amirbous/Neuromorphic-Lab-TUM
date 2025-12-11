@@ -255,10 +255,96 @@ void write_vtu(const std::string problem_name,
 }
 
 
+template<typename T_index, typename T_value>
+void WriteRHSVector(const std::vector<T_value> &b, const std::string model_name) {
+    std::ofstream fstream;
+    std::string fname = model_name + "_rhs.txt";
+
+    fstream.open(fname);
+
+    fstream << b.size() << std::endl;
+    if (fstream.is_open()) {
+        fstream << std::scientific << std::setprecision(16);
+        for (size_t i = 0; i < b.size(); ++i) {
+            fstream << b[i] << std::endl;
+        }
+        fstream.close();
+    } else {
+        std::cerr << "Error in opening RHS file" << std::endl;
+    }
+}
+
+template<typename T_index, typename T_value>
+std::vector<T_value> ReadVector(const std::string model_name, const std::string vector_file_desc) {
+    std::ifstream fstream;
+    std::string fname = model_name + "_" + vector_file_desc + ".txt";
+    std::cout << "Reading vector from file: " << fname << std::endl;
+    fstream.open(fname);
+
+    if (!fstream.is_open()) {
+        std::cerr << "Error: Could not open RHS file " << fname << std::endl;
+        return {};
+    }
+
+    size_t size;
+    fstream >> size;
+    std::vector<T_value> x(size);
+
+    for (size_t i = 0; i < size; ++i) {
+        fstream >> x[i];
+    }
+
+    fstream.close();
+    return x;
+}
+
+template<typename T_index, typename T_value>
+void WriteCSRMatrix(const CSR_matrix<T_index, T_value> &A, std::string model_name) {
+
+    // csr format is 1-based indexing
+    std::ofstream fstream;
+    std::string fname = model_name + "_mtx.txt";
+
+    fstream.open(fname);
+    if (!fstream.is_open()) {
+        std::cerr << "Error: Could not open file to write CSR matrix." << std::endl;
+        return;
+    }
+
+    fstream << A.n_rows << " " << A.n_cols << " " << A.row_ptr[A.n_rows] << std::endl;
+
+
+    fstream << std::scientific << std::setprecision(16);
+
+    for (T_index i = 0; i < A.n_rows; ++i) {
+        T_index start = A.row_ptr[i];
+        T_index end = A.row_ptr[i + 1];
+
+        for (T_index j = start; j < end; ++j) {
+                
+                fstream << std::setw(5) << (i + 1) << " " 
+                            << std::setw(5) << (A.col_ind[j] + 1) << "    " 
+                            << A.values[j] << std::endl;
+
+        }
+    }
+
+    fstream.close();
+}
+
 
 template void ReadVTK<int, float>(std::string model_name, Model<int, float> &model);
-template void write_vtu<int, float>(const std::string problem_name,
+template void write_vtu<int, float>(const std::string model_name,
                                    Model<int, float> &model);
 template void ReadVTK<int, double>(std::string model_name, Model<int, double> &model);
-template void write_vtu<int, double>(const std::string problem_name,
+template void write_vtu<int, double>(const std::string model_name,
                                     Model<int, double> &model);
+
+template void WriteCSRMatrix<int, float>(const CSR_matrix<int, float> &A, std::string model_name);
+template void WriteCSRMatrix<int, double>(const CSR_matrix<int, double> &A, std::string model_name);
+
+template void WriteRHSVector<int, float>(const std::vector<float> &b, const std::string problem_name);
+template void WriteRHSVector<int, double>(const std::vector<double> &b, const std::string problem_name);
+
+template std::vector<float> ReadVector<int, float>(const std::string model_name, const std::string vector_file_desc);
+template std::vector<double> ReadVector<int, double>(const std::string model_name, const std::string vector_file_desc);
