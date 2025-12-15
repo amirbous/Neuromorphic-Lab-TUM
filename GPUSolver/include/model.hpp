@@ -43,7 +43,7 @@ struct Vertex {
 };
 
 
-// just needed for processing the geometry!
+// just needed for processing the geometry! (getting faces of elements for extraction boundary vertices)
 template<typename T_index>
 struct Face {
     Face()
@@ -73,6 +73,36 @@ struct Face {
     T_index v1, v2, v3;
 
 };
+
+
+
+template<typename T_index>
+struct Edge {
+    Edge()
+        : v1(0), v2(0) {}
+    Edge(T_index v1, T_index v2)
+        : v1(v1), v2(v2) {}
+    
+    Edge(const Edge& other)
+        : v1(other.v1), v2(other.v2) {}
+
+    Edge& operator=(const Edge&) = default;
+
+    bool operator==(const Edge& other) const {
+        return v1 == other.v1 && v2 == other.v2;
+    }
+
+    void sort_edges() {
+        if (v1 > v2) std::swap(v1, v2);
+    }
+    bool operator<(const Edge& other) const {
+        if (v1 != other.v1) return v1 < other.v1;
+        return v2 < other.v2;
+    }
+    T_index v1, v2;
+
+};
+
 
 template<typename T_index>
 struct Element {

@@ -23,13 +23,46 @@ void DisplayWelcomeHeader()
 }
 
 
+template<typename T_index, typename T_value>
+void print_log(std::string problem_name, const Model<T_index, T_value> &model, const CSR_matrix<T_index, T_value> &A,
+                const T_value max_edge_length, const T_value residual_norm, std::string log_file)
+{
+    if (log_file.compare("") == 0) {
+        // print to screen
+        std::cout << std::right << std::setw(15) << problem_name <<",";
+        std::cout << std::right << std::setw(12) << model.n_vertices <<",";
+        std::cout << std::right << std::setw(15) << A.n_nonzero <<",";
+        std::cout << std::right << std::setw(15) << std::fixed << std::setprecision(6) << max_edge_length <<",";
+        std::cout << std::right << std::setw(15) << std::fixed << std::setprecision(6) << residual_norm;
+
+        std::cout << std::endl;
+    }
+    else {
+        // print to file
+        std::ofstream fstream;
+        fstream.open(log_file, std::ios_base::app); 
+
+        fstream << std::right << std::setw(15) << problem_name <<",";
+        fstream << std::right << std::setw(12) << model.n_vertices <<",";
+        fstream << std::right << std::setw(15) << A.n_nonzero <<",";
+        fstream << std::right << std::setw(15) << std::fixed << std::setprecision(6) << max_edge_length <<",";
+        fstream << std::right << std::setw(15) << std::fixed << std::setprecision(6) << residual_norm;
+
+        fstream << std::endl;
+        fstream.close();
+
+    }
+
+}
+
+
 // TODO: adapt for tetrahedral elements - DONE
 template<typename T_index, typename T_value>
 void ReadVTK(std::string model_name, Model<T_index, T_value> &model)
 {
 
         std::string vtk_filename = model_name + ".vtk";
-        std::string vtk_file = "data/" + vtk_filename;
+        std::string vtk_file = "data/mesh/" + vtk_filename;
         std::ifstream vtk_file_stream(vtk_file);
 
 
@@ -98,7 +131,6 @@ void ReadVTK(std::string model_name, Model<T_index, T_value> &model)
 
                         unsigned long int total_indices = offsets.back();
                         connectivity_raw.resize(total_indices);
-                        std::cout << "Total connectivity indices to read: " << total_indices << std::endl;
                         for (T_index i = 0; i < total_indices; ++i)
                         {
                                 vtk_file_stream >> connectivity_raw[i];
@@ -136,6 +168,8 @@ void ReadVTK(std::string model_name, Model<T_index, T_value> &model)
         
         vtk_file_stream.close();
 }
+
+
 
 
 // TODO: adapt for tetrahedral elements - DONE
@@ -278,7 +312,6 @@ template<typename T_index, typename T_value>
 std::vector<T_value> ReadVector(const std::string model_name, const std::string vector_file_desc) {
     std::ifstream fstream;
     std::string fname = model_name + "_" + vector_file_desc + ".txt";
-    std::cout << "Reading vector from file: " << fname << std::endl;
     fstream.open(fname);
 
     if (!fstream.is_open()) {
@@ -348,3 +381,8 @@ template void WriteRHSVector<int, double>(const std::vector<double> &b, const st
 
 template std::vector<float> ReadVector<int, float>(const std::string model_name, const std::string vector_file_desc);
 template std::vector<double> ReadVector<int, double>(const std::string model_name, const std::string vector_file_desc);
+
+template void print_log<int, float>(std::string problem_name, const Model<int, float> &model, const CSR_matrix<int, float> &A,
+                const float max_edge_length, const float residual_norm, std::string log_file);
+template void print_log<int, double>(std::string problem_name, const Model<int, double> &model, const CSR_matrix<int, double> &A,
+                const double max_edge_length, const double residual_norm, std::string log_file);

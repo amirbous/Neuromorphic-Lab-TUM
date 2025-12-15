@@ -1,0 +1,4 @@
+   problem_name,  n_vertices,  num_non_zeros,   max_e_length,    l2_res_norm
+         Cube01,         265,            537,       0.387719,       0.101343
+         Cube02,        1211,           5636,       0.228423,       0.028483
+         Cube03,       14389,         134268,       0.084901,       0.004273
