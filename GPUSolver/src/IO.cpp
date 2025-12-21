@@ -290,9 +290,9 @@ void write_vtu(const std::string problem_name,
 
 
 template<typename T_index, typename T_value>
-void WriteRHSVector(const std::vector<T_value> &b, const std::string model_name) {
+void WriteVector(const std::vector<T_value> &b, const std::string model_name, std::string vector_file_desc) {
     std::ofstream fstream;
-    std::string fname = model_name + "_rhs.txt";
+    std::string fname = model_name + "_" + vector_file_desc + ".txt";
 
     fstream.open(fname);
 
@@ -376,8 +376,8 @@ template void write_vtu<int, double>(const std::string model_name,
 template void WriteCSRMatrix<int, float>(const CSR_matrix<int, float> &A, std::string model_name);
 template void WriteCSRMatrix<int, double>(const CSR_matrix<int, double> &A, std::string model_name);
 
-template void WriteRHSVector<int, float>(const std::vector<float> &b, const std::string problem_name);
-template void WriteRHSVector<int, double>(const std::vector<double> &b, const std::string problem_name);
+template void WriteVector<int, float>(const std::vector<float> &b, const std::string problem_name, std::string vector_file_desc);
+template void WriteVector<int, double>(const std::vector<double> &b, const std::string problem_name, std::string vector_file_desc);
 
 template std::vector<float> ReadVector<int, float>(const std::string model_name, const std::string vector_file_desc);
 template std::vector<double> ReadVector<int, double>(const std::string model_name, const std::string vector_file_desc);

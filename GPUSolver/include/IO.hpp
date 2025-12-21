@@ -21,7 +21,7 @@ template<typename T_index, typename T_value>
 void WriteCSRMatrix(const CSR_matrix<T_index, T_value> &A, std::string model_name);
 
 template<typename T_index, typename T_value>
-void WriteRHSVector(const std::vector<T_value> &b, const std::string problem_name);
+void WriteVector(const std::vector<T_value> &b, const std::string problem_name, std::string vector_file_desc);
 
 
 template<typename T_index, typename T_value>

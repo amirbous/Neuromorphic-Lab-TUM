@@ -2,14 +2,14 @@
 
 Base_problem_name=$1
 number_of_problems=$2
-number_of_problems=$((number_of_problems - 1))
 clean_directory=$3
+last_problem=$((number_of_problems - 1))
 
 
-
+echo ${last_problem}
 echo "   problem_name,  n_vertices,  num_non_zeros,   max_e_length,    l2_res_norm"
 
-for i in $(seq 0 ${number_of_problems}); do
+for i in $(seq 0 ${last_problem}); do
     complete_name=${Base_problem_name}${i}
     ./poissfem ${complete_name} 1
     python3 solve_csr_scipy.py ${complete_name}
