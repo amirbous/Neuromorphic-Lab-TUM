@@ -24,16 +24,17 @@ void DisplayWelcomeHeader()
 
 
 template<typename T_index, typename T_value>
-void print_log(std::string problem_name, const Model<T_index, T_value> &model, const CSR_matrix<T_index, T_value> &A,
-                const T_value max_edge_length, const T_value residual_norm, std::string log_file)
+void print_report(std::string problem_name, const Report<T_index, T_value> report, std::string log_file)
 {
     if (log_file.compare("") == 0) {
         // print to screen
         std::cout << std::right << std::setw(15) << problem_name <<",";
-        std::cout << std::right << std::setw(12) << model.n_vertices <<",";
-        std::cout << std::right << std::setw(15) << A.n_nonzero <<",";
-        std::cout << std::right << std::setw(15) << std::fixed << std::setprecision(6) << max_edge_length <<",";
-        std::cout << std::right << std::setw(15) << std::fixed << std::setprecision(6) << residual_norm;
+        std::cout << std::right << std::setw(12) << report.n_vertices <<",";
+        std::cout << std::right << std::setw(15) << report.n_nonzero <<",";
+        std::cout << std::right << std::setw(15) << std::fixed << std::setprecision(6) << report.max_edge_length <<",";
+        std::cout << std::right << std::setw(15) << std::fixed << std::setprecision(6) << report.residual_norm << ",";
+        std::cout << std::right << std::setw(15) << std::fixed << std::setprecision(6) << report.transfer_time << ",";
+        std::cout << std::right << std::setw(15) << std::fixed << std::setprecision(6) << report.solve_time;
 
         std::cout << std::endl;
     }
@@ -43,10 +44,12 @@ void print_log(std::string problem_name, const Model<T_index, T_value> &model, c
         fstream.open(log_file, std::ios_base::app); 
 
         fstream << std::right << std::setw(15) << problem_name <<",";
-        fstream << std::right << std::setw(12) << model.n_vertices <<",";
-        fstream << std::right << std::setw(15) << A.n_nonzero <<",";
-        fstream << std::right << std::setw(15) << std::fixed << std::setprecision(6) << max_edge_length <<",";
-        fstream << std::right << std::setw(15) << std::fixed << std::setprecision(6) << residual_norm;
+        fstream << std::right << std::setw(12) << report.n_vertices <<",";
+        fstream << std::right << std::setw(15) << report.n_nonzero <<",";
+        fstream << std::right << std::setw(15) << std::fixed << std::setprecision(6) << report.max_edge_length <<",";
+        fstream << std::right << std::setw(15) << std::fixed << std::setprecision(6) << report.residual_norm;
+        fstream << std::right << std::setw(15) << std::fixed << std::setprecision(6) << report.transfer_time << ",";
+        fstream << std::right << std::setw(15) << std::fixed << std::setprecision(6) << report.solve_time;
 
         fstream << std::endl;
         fstream.close();
@@ -382,7 +385,5 @@ template void WriteVector<int, double>(const std::vector<double> &b, const std::
 template std::vector<float> ReadVector<int, float>(const std::string model_name, const std::string vector_file_desc);
 template std::vector<double> ReadVector<int, double>(const std::string model_name, const std::string vector_file_desc);
 
-template void print_log<int, float>(std::string problem_name, const Model<int, float> &model, const CSR_matrix<int, float> &A,
-                const float max_edge_length, const float residual_norm, std::string log_file);
-template void print_log<int, double>(std::string problem_name, const Model<int, double> &model, const CSR_matrix<int, double> &A,
-                const double max_edge_length, const double residual_norm, std::string log_file);
+template void print_report<int, float>(std::string problem_name, Report<int, float>, std::string log_file);
+template void print_report<int, double>(std::string problem_name, Report<int, double>, std::string log_file);

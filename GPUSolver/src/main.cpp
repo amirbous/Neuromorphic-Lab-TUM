@@ -5,6 +5,7 @@
 #include <vector>
 #include <numeric>
 #include <algorithm>
+#include <memory>
 
 
 #include "include/IO.hpp"
@@ -27,8 +28,7 @@ int main(int argc, char* argv[])  {
     CSR_matrix<index_type, value_type> A;
 
     std::vector<value_type> b; // we still don't know the size, given the sparsity pattern but will be decided in initialize_CSR_indices
-    std::vector<value_type> x0;
-
+    std::vector<value_type> x0; // solution vector
     model_name = (argc > 1 ? argv[1] : "Sphere_00");
     write_matrix = (argc > 2 ? (std::string(argv[2]) == "1" ? true : false) : false);
 
@@ -37,49 +37,67 @@ int main(int argc, char* argv[])  {
     initialize_CSR_indices<index_type, value_type>(poissfem_model, A);
     fill_FEM_CSR<index_type, value_type>(poissfem_model, A, b);
 
-
-    std::cout << "Finished assembling FEM CSR matrix." << std::endl;
     //******************************************
     //*  Solver part in ginkgo :)
     //******************************************
 
     std::shared_ptr<gko::Executor> exec;
-    exec = gko::CudaExecutor::create(0, gko::ReferenceExecutor::create());
+    if (gko::CudaExecutor::get_num_devices() > 0) {
+        exec = gko::CudaExecutor::create(0, gko::ReferenceExecutor::create());
+    } else {
+        exec = gko::ReferenceExecutor::create();
+    }
 
-    // wrapping ginkgo around existing csr matrix
-    auto gko_A = gko::share(
-    gko::matrix::Csr<value_type, index_type>::create(
-        exec,
-        gko::dim<2>{A.n_rows, A.n_cols},
-        gko::array<value_type>::view(exec, A.n_nonzero, A.values.data()),
-        gko::array<index_type>::view(exec, A.n_nonzero, A.col_ind.data()),
-        gko::array<index_type>::view(exec, A.n_rows + 1, A.row_ptr.data())
-    )
+    auto logger = gko::share(
+        gko::log::Stream<value_type>::create(
+            gko::log::Logger::all_events_mask,
+            std::cout
+        )
     );
+
+
+    exec->synchronize();
+
+    auto transfer_start = std::chrono::steady_clock::now();
+
+    auto gko_A = gko::share(
+        gko::matrix::Csr<value_type, index_type>::create(
+            exec,
+            gko::dim<2>{A.n_rows, A.n_cols},
+            gko::array<value_type>::view(exec, A.n_nonzero, A.values.data()),
+            gko::array<index_type>::view(exec, A.n_nonzero, A.col_ind.data()),
+            gko::array<index_type>::view(exec, A.n_rows + 1, A.row_ptr.data())
+        )
+    );
+
+    exec->synchronize();
+    auto transfer_end = std::chrono::steady_clock::now();
+
 
     x0.assign(A.n_rows, 0.0);
 
     auto gko_b = gko::share(
-    gko::matrix::Dense<value_type>::create(
-        exec,
-        gko::dim<2>{A.n_rows, 1},
-        gko::array<value_type>::view(exec, b.size(), b.data()),
-        1
-    )
+        gko::matrix::Dense<value_type>::create(
+            exec,
+            gko::dim<2>{A.n_rows, 1},
+            gko::array<value_type>::view(exec, b.size(), b.data()),
+            1
+        )
     );
+
     auto gko_x = gko::share(
-    gko::matrix::Dense<value_type>::create(
-        exec,
-        gko::dim<2>{A.n_rows, 1},
-        gko::array<value_type>::view(exec, x0.size(), x0.data()),
-        1
-    )
-    ); 
-    auto solver =
-    gko::solver::Cg<value_type>::build()
+        gko::matrix::Dense<value_type>::create(
+            exec,
+            gko::dim<2>{A.n_rows, 1},
+            gko::array<value_type>::view(exec, x0.size(), x0.data()),
+            1
+        )
+    );
+
+    auto solver_gen = gko::solver::Cg<value_type>::build()
         .with_criteria(
             gko::stop::Iteration::build()
-                .with_max_iters(10000)
+                .with_max_iters(1000)
                 .on(exec),
             gko::stop::ResidualNorm<value_type>::build()
                 .with_reduction_factor(1e-6)
@@ -88,13 +106,25 @@ int main(int argc, char* argv[])  {
         .with_preconditioner(
             gko::preconditioner::Jacobi<value_type>::build().on(exec)
         )
-        .on(exec)
-        ->generate(gko_A);
+        .on(exec);
 
-    
-    solver->apply(gko_b, gko_x); //solving step
+
+    auto solver = solver_gen->generate(gko_A);
+
+
+    exec->synchronize();
+
+    auto solve_start = std::chrono::steady_clock::now();
+    solver->apply(gko_b, gko_x);
+    exec->synchronize();
+    auto solve_end = std::chrono::steady_clock::now();
+
+
+    long transfer_time = std::chrono::duration_cast<std::chrono::microseconds>(transfer_end - transfer_start).count();
+    long solve_time = std::chrono::duration_cast<std::chrono::microseconds>(solve_end - solve_start).count();
+
+
     std::vector<index_type> boundary_nodes = extract_boundary_nodes<index_type, value_type>(poissfem_model);
-        
 
     std::vector<value_type> x_analytical;
     x_analytical.assign(x0.size(), 0);
@@ -200,7 +230,10 @@ int main(int argc, char* argv[])  {
         WriteVector<index_type, value_type>(x0, model_name, "x0");
     }
 
-    print_log<index_type, value_type>(model_name, poissfem_model, A, max_edge_length, l2_error, "");
+    Report<index_type, value_type> run_report{poissfem_model.n_vertices, A.n_nonzero, max_edge_length, l2_error, transfer_time, solve_time};
+
+
+    print_report<index_type, value_type>(model_name, run_report, "");
 
     write_vtu<index_type, value_type>(model_name, poissfem_model);
     

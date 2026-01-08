@@ -28,6 +28,7 @@ template<typename T_index, typename T_value>
 std::vector<T_value> ReadVector(const std::string model_name, const std::string vector_file_desc);
 
 template<typename T_index, typename T_value>
-void print_log(std::string problem_name, const Model<T_index, T_value> &model, const CSR_matrix<T_index, T_value> &A,
-                const T_value max_edge_length, const T_value residual_norm, std::string log_file);
+void print_report(std::string problem_name, Report<T_index, T_value>, std::string log_file);
+
+
 #endif

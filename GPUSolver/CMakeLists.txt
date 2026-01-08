@@ -19,6 +19,7 @@ add_executable(${TARGET_EXE} ${SOURCES})
 
 
 find_package(CUDAToolkit REQUIRED)
+find_package(OpenMP REQUIRED)
 
 set(Ginkgo_DIR "/usr/local/lib/cmake/Ginkgo")
 find_package(Ginkgo REQUIRED)
@@ -27,13 +28,12 @@ find_package(Ginkgo REQUIRED)
 #find_library(CUDSS_LIB NAMES cudss) in case cudss instead of ginkgo
 
 
-
-target_link_libraries(${TARGET_EXE} PRIVATE 
-    CUDA::cublas 
+target_link_libraries(${TARGET_EXE} PRIVATE
+    CUDA::cublas
     CUDA::cudart
     Ginkgo::ginkgo
+    OpenMP::OpenMP_CXX
 )
-
 
 target_include_directories(${TARGET_EXE} PRIVATE 
     ${PROJECT_SOURCE_DIR} 
