@@ -165,6 +165,17 @@ struct Model {
 };
 
 
+template<typename T_index, typename T_value>
+struct Report {
+        T_index n_vertices;
+        T_index n_nonzero;
+        T_value max_edge_length;
+        T_value residual_norm;
+        long transfer_time;
+        long solve_time;
+
+};
+
 
 template<typename T_index, typename T_value>
 struct CSR_matrix {

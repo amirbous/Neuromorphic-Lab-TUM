@@ -12,6 +12,8 @@
 #include "include/model.hpp"
 #include "include/ComputeModel.hpp"
 
+#include <omp.h>
+
 
 /*************************************
 
@@ -244,7 +246,6 @@ void fill_FEM_CSR(const Model<T_index, T_value> &model,
     T_index N = model.n_vertices;
 
     // 1. Re-build Mapping (Global -> Reduced)
-    // Note: In a production code, you might store this map in a struct/class to avoid rebuilding.
     std::vector<T_index> boundary_nodes = extract_boundary_nodes<T_index, T_value>(model);
     std::vector<bool> is_boundary(N, false);
     for (T_index idx : boundary_nodes) is_boundary[idx] = true;
